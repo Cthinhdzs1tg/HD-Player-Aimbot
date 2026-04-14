@@ -54,14 +54,14 @@ jobs:
           echo   ^<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'"^> >> Aimbot.vcxproj
           echo     ^<ClCompile^> >> Aimbot.vcxproj
           echo       ^<WarningLevel^>Level3^</WarningLevel^> >> Aimbot.vcxproj
-          echo       ^<PreprocessorDefinitions^>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)^</PreprocessorDefinitions^> >> Aimbot.vcxproj
+          echo       ^<PreprocessorDefinitions^>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%%(PreprocessorDefinitions)^</PreprocessorDefinitions^> >> Aimbot.vcxproj
           echo       ^<SDLCheck^>true^</SDLCheck^> >> Aimbot.vcxproj
           echo     ^</ClCompile^> >> Aimbot.vcxproj
           echo     ^<Link^> >> Aimbot.vcxproj
           echo       ^<SubSystem^>Windows^</SubSystem^> >> Aimbot.vcxproj
           echo       ^<EnableCOMDATFolding^>true^</EnableCOMDATFolding^> >> Aimbot.vcxproj
           echo       ^<OptimizeReferences^>true^</OptimizeReferences^> >> Aimbot.vcxproj
-          echo       ^<AdditionalDependencies^>shell32.lib;kernel32.lib;user32.lib;gdi32.lib;%(AdditionalDependencies)^</AdditionalDependencies^> >> Aimbot.vcxproj
+          echo       ^<AdditionalDependencies^>shell32.lib;kernel32.lib;user32.lib;gdi32.lib;%%(AdditionalDependencies)^</AdditionalDependencies^> >> Aimbot.vcxproj
           echo     ^</Link^> >> Aimbot.vcxproj
           echo   ^</ItemDefinitionGroup^> >> Aimbot.vcxproj
           echo   ^<ItemGroup^> >> Aimbot.vcxproj
