@@ -1,3 +1,9 @@
+// ==================== main.cpp ====================
+// Đã sửa để compile sạch trên GitHub Actions
+
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
 #include <windows.h>
 #include <psapi.h>
 #include <tlhelp32.h>
@@ -8,15 +14,11 @@
 #include <atomic>
 #include <random>
 #include <chrono>
-#include <sstream>
-#include <iomanip>
+#include <cstdio>         // cho sprintf_s
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "kernel32.lib")
 #pragma comment(lib, "user32.lib")
-
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
 
 const DWORD PROCESS_ALL_ACCESS = 0x1F0FFF;
 const wchar_t* PROCESS_NAME = L"HD-Player.exe";
@@ -43,7 +45,6 @@ std::vector<BYTE> g_lastAimBytes;
 HHOOK g_keyboardHook = nullptr;
 HWND g_hwnd = nullptr;
 
-// Random engine
 std::mt19937 g_rng(std::random_device{}());
 
 // Forward declarations
@@ -64,7 +65,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
 
-    // Hide console
+    // Hide console if exists
     HWND console = GetConsoleWindow();
     if (console) ShowWindow(console, SW_HIDE);
 
@@ -78,7 +79,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     RegisterClassA(&wc);
 
-    // Create window
     g_hwnd = CreateWindowA("AimbotWindowClass", "Aimbot",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
         CW_USEDEFAULT, CW_USEDEFAULT, 560, 380,
@@ -89,24 +89,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ShowWindow(g_hwnd, SW_SHOW);
     UpdateWindow(g_hwnd);
 
-    // Keyboard hook
     g_keyboardHook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandleA(nullptr), 0);
 
-    // Start threads
+    // Threads
     std::thread attachThread([]() {
         while (g_running && !OpenProcessByName()) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-        if (g_hProcess) {
-            PostMessage(g_hwnd, WM_USER + 1, 0, 0);
-        }
+        if (g_hProcess) PostMessage(g_hwnd, WM_USER + 1, 0, 0);
     });
     attachThread.detach();
 
     std::thread aimbotThread(AimbotLoop);
     aimbotThread.detach();
 
-    // Message loop
     MSG msg = {};
     while (GetMessageA(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
@@ -122,10 +118,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    static HFONT hBigFont = CreateFontA(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
-        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, "Segoe UI");
-    static HFONT hTitleFont = CreateFontA(26, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
-        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, "Segoe UI");
+    static HFONT hBigFont = CreateFontA(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, "Segoe UI");
+    static HFONT hTitleFont = CreateFontA(26, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, "Segoe UI");
 
     switch (msg) {
     case WM_PAINT: {
@@ -135,12 +129,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         GetClientRect(hwnd, &rect);
 
         FillRect(hdc, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
-
         SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(0, 255, 157));
 
         // Title
         SelectObject(hdc, hTitleFont);
+        SetTextColor(hdc, RGB(0, 255, 157));
         DrawTextA(hdc, "AIMBOT", -1, &rect, DT_CENTER | DT_TOP);
 
         // Status
@@ -149,7 +142,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         SelectObject(hdc, hBigFont);
         DrawTextA(hdc, g_active ? "ACTIVE" : "OFF", -1, &statusRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
-        // Hotkey info
+        // Hotkey
         SetTextColor(hdc, RGB(187, 187, 187));
         char hotkeyText[64];
         sprintf_s(hotkeyText, "Hotkey: %c (Press to toggle)", toupper(g_current_hotkey));
@@ -208,7 +201,7 @@ bool OpenProcessByName()
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snapshot == INVALID_HANDLE_VALUE) return false;
 
-    PROCESSENTRY32W pe = { sizeof(PROCESSENTRY32W) };   // Dùng W version để hỗ trợ Unicode
+    PROCESSENTRY32W pe = { sizeof(PROCESSENTRY32W) };
     if (Process32FirstW(snapshot, &pe)) {
         do {
             if (_wcsicmp(pe.szExeFile, PROCESS_NAME) == 0) {
@@ -239,8 +232,7 @@ bool WriteRaw(uintptr_t addr, const void* data, size_t size)
 
 std::vector<uintptr_t> AoBScan(uintptr_t start, uintptr_t end, const char* pattern)
 {
-    // TODO: Implement full AoB scanner later
-    return {};
+    return {};   // TODO: Implement later
 }
 
 void AimbotLoop()
