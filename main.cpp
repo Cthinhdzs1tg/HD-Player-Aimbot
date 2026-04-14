@@ -69,8 +69,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 
     RegisterClassA(&wc);
 
-    g_hwnd = CreateWindowA("AimbotWindowClass", "Aimbot", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-                           CW_USEDEFAULT, CW_USEDEFAULT, 560, 380, nullptr, nullptr, hInstance, nullptr);
+    g_hwnd = CreateWindowA("AimbotWindowClass", "Aimbot",
+        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+        CW_USEDEFAULT, CW_USEDEFAULT, 560, 380,
+        nullptr, nullptr, hInstance, nullptr);
 
     if (!g_hwnd) return 0;
 
@@ -99,7 +101,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
     return (int)msg.wParam;
 }
 
-// ==================== UI ====================
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     static HFONT hTitle = CreateFontA(26,0,0,0,FW_BOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,"Segoe UI");
@@ -164,7 +165,6 @@ void ToggleAimbot() {
     InvalidateRect(g_hwnd, nullptr, TRUE);
 }
 
-// ==================== Memory ====================
 bool OpenProcessByName()
 {
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
