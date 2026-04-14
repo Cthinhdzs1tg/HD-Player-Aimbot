@@ -23,7 +23,7 @@ jobs:
         with:
           arch: x64
 
-      - name: Create Aimbot.vcxproj with correct settings
+      - name: Create Aimbot.vcxproj (Fixed OutputPath)
         shell: cmd
         run: |
           echo ^<?xml version="1.0" encoding="utf-8"?^> > Aimbot.vcxproj
@@ -34,6 +34,15 @@ jobs:
           echo       ^<Platform^>x64^</Platform^> >> Aimbot.vcxproj
           echo     ^</ProjectConfiguration^> >> Aimbot.vcxproj
           echo   ^</ItemGroup^> >> Aimbot.vcxproj
+
+          echo   ^<PropertyGroup Label="Globals"^> >> Aimbot.vcxproj
+          echo     ^<ProjectGuid^>{C0DEBA5E-0000-0000-0000-000000000000}^</ProjectGuid^> >> Aimbot.vcxproj
+          echo     ^<Keyword^>Win32Proj^</Keyword^> >> Aimbot.vcxproj
+          echo     ^<WindowsTargetPlatformVersion^>10.0^</WindowsTargetPlatformVersion^> >> Aimbot.vcxproj
+          echo   ^</PropertyGroup^> >> Aimbot.vcxproj
+
+          echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" /^> >> Aimbot.vcxproj
+
           echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration"^> >> Aimbot.vcxproj
           echo     ^<ConfigurationType^>Application^</ConfigurationType^> >> Aimbot.vcxproj
           echo     ^<UseDebugLibraries^>false^</UseDebugLibraries^> >> Aimbot.vcxproj
@@ -41,11 +50,17 @@ jobs:
           echo     ^<WholeProgramOptimization^>true^</WholeProgramOptimization^> >> Aimbot.vcxproj
           echo     ^<CharacterSet^>Unicode^</CharacterSet^> >> Aimbot.vcxproj
           echo     ^<RuntimeLibrary^>MultiThreaded^</RuntimeLibrary^> >> Aimbot.vcxproj
+          echo     ^<OutDir^>x64\Release\^</OutDir^> >> Aimbot.vcxproj
+          echo     ^<OutputPath^>x64\Release\^</OutputPath^> >> Aimbot.vcxproj
+          echo     ^<PlatformTarget^>x64^</PlatformTarget^> >> Aimbot.vcxproj
           echo   ^</PropertyGroup^> >> Aimbot.vcxproj
-          echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" /^> >> Aimbot.vcxproj
+
+          echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" /^> >> Aimbot.vcxproj
+
           echo   ^<ItemGroup^> >> Aimbot.vcxproj
           echo     ^<ClCompile Include="main.cpp" /^> >> Aimbot.vcxproj
           echo   ^</ItemGroup^> >> Aimbot.vcxproj
+
           echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" /^> >> Aimbot.vcxproj
           echo ^</Project^> >> Aimbot.vcxproj
 
