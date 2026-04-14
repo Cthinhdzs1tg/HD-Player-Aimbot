@@ -23,7 +23,7 @@ jobs:
         with:
           arch: x64
 
-      - name: Create Aimbot.vcxproj (Fixed OutputPath)
+      - name: Create Aimbot.vcxproj (with fixes)
         shell: cmd
         run: |
           echo ^<?xml version="1.0" encoding="utf-8"?^> > Aimbot.vcxproj
@@ -52,10 +52,23 @@ jobs:
           echo     ^<RuntimeLibrary^>MultiThreaded^</RuntimeLibrary^> >> Aimbot.vcxproj
           echo     ^<OutDir^>x64\Release\^</OutDir^> >> Aimbot.vcxproj
           echo     ^<OutputPath^>x64\Release\^</OutputPath^> >> Aimbot.vcxproj
-          echo     ^<PlatformTarget^>x64^</PlatformTarget^> >> Aimbot.vcxproj
           echo   ^</PropertyGroup^> >> Aimbot.vcxproj
 
           echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" /^> >> Aimbot.vcxproj
+
+          echo   ^<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'"^> >> Aimbot.vcxproj
+          echo     ^<ClCompile^> >> Aimbot.vcxproj
+          echo       ^<WarningLevel^>Level3^</WarningLevel^> >> Aimbot.vcxproj
+          echo       ^<PreprocessorDefinitions^>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)^</PreprocessorDefinitions^> >> Aimbot.vcxproj
+          echo       ^<SDLCheck^>true^</SDLCheck^> >> Aimbot.vcxproj
+          echo     ^</ClCompile^> >> Aimbot.vcxproj
+          echo     ^<Link^> >> Aimbot.vcxproj
+          echo       ^<SubSystem^>Windows^</SubSystem^> >> Aimbot.vcxproj
+          echo       ^<EnableCOMDATFolding^>true^</EnableCOMDATFolding^> >> Aimbot.vcxproj
+          echo       ^<OptimizeReferences^>true^</OptimizeReferences^> >> Aimbot.vcxproj
+          echo       ^<AdditionalDependencies^>shell32.lib;kernel32.lib;user32.lib;%(AdditionalDependencies)^</AdditionalDependencies^> >> Aimbot.vcxproj
+          echo     ^</Link^> >> Aimbot.vcxproj
+          echo   ^</ItemDefinitionGroup^> >> Aimbot.vcxproj
 
           echo   ^<ItemGroup^> >> Aimbot.vcxproj
           echo     ^<ClCompile Include="main.cpp" /^> >> Aimbot.vcxproj
