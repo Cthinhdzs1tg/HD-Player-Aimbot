@@ -26,8 +26,7 @@ jobs:
       - name: Create Aimbot.vcxproj if not exists
         shell: pwsh
         run: |
-          if (-not (Test-Path "Aimbot.vcxproj")) {
-            $vcxproj = @"
+          $vcxprojContent = @'
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
@@ -50,9 +49,8 @@ jobs:
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
-"@
-            $vcxproj | Out-File -FilePath "Aimbot.vcxproj" -Encoding utf8
-          }
+'@
+          $vcxprojContent | Out-File -FilePath "Aimbot.vcxproj" -Encoding utf8
 
       - name: Build Release x64
         run: msbuild Aimbot.vcxproj /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
