@@ -23,18 +23,18 @@ jobs:
         with:
           arch: x64
 
-      - name: Create Aimbot.vcxproj
+      - name: Create Aimbot.vcxproj with correct settings
         shell: cmd
         run: |
           echo ^<?xml version="1.0" encoding="utf-8"?^> > Aimbot.vcxproj
-          echo ^<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"^> >> Aimbot.vcxproj
+          echo ^<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"^> >> Aimbot.vcxproj
           echo   ^<ItemGroup Label="ProjectConfigurations"^> >> Aimbot.vcxproj
-          echo     ^<ProjectConfiguration Include="Release^|x64"^> >> Aimbot.vcxproj
+          echo     ^<ProjectConfiguration Include="Release|x64"^> >> Aimbot.vcxproj
           echo       ^<Configuration^>Release^</Configuration^> >> Aimbot.vcxproj
           echo       ^<Platform^>x64^</Platform^> >> Aimbot.vcxproj
           echo     ^</ProjectConfiguration^> >> Aimbot.vcxproj
           echo   ^</ItemGroup^> >> Aimbot.vcxproj
-          echo   ^<PropertyGroup Condition="'$(Configuration)^|$(Platform)'=='Release^|x64'" Label="Configuration"^> >> Aimbot.vcxproj
+          echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration"^> >> Aimbot.vcxproj
           echo     ^<ConfigurationType^>Application^</ConfigurationType^> >> Aimbot.vcxproj
           echo     ^<UseDebugLibraries^>false^</UseDebugLibraries^> >> Aimbot.vcxproj
           echo     ^<PlatformToolset^>v143^</PlatformToolset^> >> Aimbot.vcxproj
@@ -42,7 +42,7 @@ jobs:
           echo     ^<CharacterSet^>Unicode^</CharacterSet^> >> Aimbot.vcxproj
           echo     ^<RuntimeLibrary^>MultiThreaded^</RuntimeLibrary^> >> Aimbot.vcxproj
           echo   ^</PropertyGroup^> >> Aimbot.vcxproj
-          echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" /^> >> Aimbot.vcxproj
+          echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" /^> >> Aimbot.vcxproj
           echo   ^<ItemGroup^> >> Aimbot.vcxproj
           echo     ^<ClCompile Include="main.cpp" /^> >> Aimbot.vcxproj
           echo   ^</ItemGroup^> >> Aimbot.vcxproj
