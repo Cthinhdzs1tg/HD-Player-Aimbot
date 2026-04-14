@@ -1,7 +1,8 @@
 // ================================================
-// main.cpp - FINAL VERSION - Fixed macro conflict
+// main.cpp - FINAL FIXED VERSION
 // ================================================
 
+// Bảo vệ macro trước mọi include
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define STRICT
@@ -10,6 +11,8 @@
 #define NOIME
 #define NOSERVICE
 #define NOMCX
+#define NORPC
+#define NOPROXYSTUB
 
 #include <windows.h>
 #include <psapi.h>
@@ -30,17 +33,15 @@
 const DWORD PROCESS_ALL_ACCESS = 0x1F0FFF;
 const wchar_t* PROCESS_NAME = L"HD-Player.exe";
 
-const char* AIMBOT_AOB = "FF FF FF FF FF FF FF FF FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 FF FF FF FF ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 80 BF";
-
 const uintptr_t TARGET_OFFSET = 0x90;
-const uintptr_t WRITE_OFFSET = 0x8C;
-const uintptr_t TEAM_OFFSET = 0x10;
+const uintptr_t WRITE_OFFSET  = 0x8C;
+const uintptr_t TEAM_OFFSET   = 0x10;
 const int LOCAL_TEAM = 1;
 
 const float FOV_LIMIT = 92.0f;
 const float SMOOTH_BASE = 0.74f;
 
-// Global variables
+// Globals
 std::atomic<bool> g_active{ false };
 std::atomic<bool> g_running{ true };
 char g_current_hotkey = 'R';
@@ -74,10 +75,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (console) ShowWindow(console, SW_HIDE);
 
     WNDCLASSA wc = {};
-    wc.lpfnWndProc = WndProc;
-    wc.hInstance = hInstance;
+    wc.lpfnWndProc   = WndProc;
+    wc.hInstance     = hInstance;
     wc.lpszClassName = "AimbotWindowClass";
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 
     RegisterClassA(&wc);
@@ -95,15 +96,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     g_keyboardHook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandleA(nullptr), 0);
 
     std::thread([]() {
-        while (g_running && !OpenProcessByName()) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+        while (g_running && !OpenProcessByName()) std::this_thread::sleep_for(std::chrono::seconds(1));
         if (g_hProcess) PostMessage(g_hwnd, WM_USER + 1, 0, 0);
     }).detach();
 
     std::thread(AimbotLoop).detach();
 
-    MSG msg = {};
+    MSG msg{};
     while (GetMessageA(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessageA(&msg);
@@ -116,43 +115,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     return (int)msg.wParam;
 }
 
-// ==================== WndProc & Keyboard ====================
+// WndProc (UI đơn giản)
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    static HFONT hBigFont  = CreateFontA(48,0,0,0,FW_BOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,"Segoe UI");
-    static HFONT hTitleFont= CreateFontA(26,0,0,0,FW_BOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,"Segoe UI");
+    static HFONT hTitle = CreateFontA(26,0,0,0,FW_BOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,"Segoe UI");
+    static HFONT hBig   = CreateFontA(48,0,0,0,FW_BOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,"Segoe UI");
 
     switch (msg) {
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        RECT rect; GetClientRect(hwnd, &rect);
-
-        FillRect(hdc, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        RECT r; GetClientRect(hwnd, &r);
+        FillRect(hdc, &r, (HBRUSH)GetStockObject(BLACK_BRUSH));
         SetBkMode(hdc, TRANSPARENT);
 
-        SelectObject(hdc, hTitleFont);
+        SelectObject(hdc, hTitle);
         SetTextColor(hdc, RGB(0,255,157));
-        DrawTextA(hdc, "AIMBOT", -1, &rect, DT_CENTER | DT_TOP);
+        DrawTextA(hdc, "AIMBOT", -1, &r, DT_CENTER | DT_TOP);
 
-        RECT statusRect = {0, 100, rect.right, 200};
+        RECT sr = {0,100,r.right,200};
         SetTextColor(hdc, g_active ? RGB(0,255,157) : RGB(255,45,85));
-        SelectObject(hdc, hBigFont);
-        DrawTextA(hdc, g_active ? "ACTIVE" : "OFF", -1, &statusRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        SelectObject(hdc, hBig);
+        DrawTextA(hdc, g_active ? "ACTIVE" : "OFF", -1, &sr, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
         SetTextColor(hdc, RGB(187,187,187));
         char buf[64];
-        sprintf_s(buf, "Hotkey: %c (Press to toggle)", toupper(g_current_hotkey));
+        sprintf_s(buf, "Hotkey: %c", toupper(g_current_hotkey));
         TextOutA(hdc, 50, 220, buf, (int)strlen(buf));
 
         SetTextColor(hdc, RGB(85,85,85));
-        sprintf_s(buf, "FOV: %.0f°   •   Smooth: %.2f", FOV_LIMIT, SMOOTH_BASE);
+        sprintf_s(buf, "FOV: %.0f° • Smooth: %.2f", FOV_LIMIT, SMOOTH_BASE);
         TextOutA(hdc, 50, 260, buf, (int)strlen(buf));
 
-        RECT bar = {0, rect.bottom-40, rect.right, rect.bottom};
+        RECT bar = {0, r.bottom-40, r.right, r.bottom};
         FillRect(hdc, &bar, CreateSolidBrush(RGB(26,26,26)));
         SetTextColor(hdc, g_hProcess ? RGB(0,255,157) : RGB(119,119,119));
-        TextOutA(hdc, 10, rect.bottom-35, g_hProcess ? "Connected to HD-Player" : "Waiting for HD-Player...", -1);
+        TextOutA(hdc, 10, r.bottom-35, g_hProcess ? "Connected to HD-Player" : "Waiting for HD-Player...", -1);
 
         EndPaint(hwnd, &ps);
         break;
@@ -171,7 +169,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     if (nCode == HC_ACTION && wParam == WM_KEYDOWN) {
-        KBDLLHOOKSTRUCT* p = (KBDLLHOOKSTRUCT*)lParam;
+        auto* p = (KBDLLHOOKSTRUCT*)lParam;
         if (p->vkCode == toupper(g_current_hotkey)) ToggleAimbot();
     }
     return CallNextHookEx(g_keyboardHook, nCode, wParam, lParam);
@@ -182,7 +180,7 @@ void ToggleAimbot() {
     InvalidateRect(g_hwnd, nullptr, TRUE);
 }
 
-// ==================== Memory & Process ====================
+// Memory functions
 bool OpenProcessByName()
 {
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -205,19 +203,17 @@ bool OpenProcessByName()
     return false;
 }
 
-bool ReadRaw(uintptr_t addr, void* buf, size_t size) {
+bool ReadRaw(uintptr_t addr, void* buf, size_t sz) {
     SIZE_T read = 0;
-    return ReadProcessMemory(g_hProcess, (LPCVOID)addr, buf, size, &read) && read == size;
+    return ReadProcessMemory(g_hProcess, (LPCVOID)addr, buf, sz, &read) && read == sz;
 }
 
-bool WriteRaw(uintptr_t addr, const void* data, size_t size) {
+bool WriteRaw(uintptr_t addr, const void* data, size_t sz) {
     SIZE_T written = 0;
-    return WriteProcessMemory(g_hProcess, (LPVOID)addr, data, size, &written) && written == size;
+    return WriteProcessMemory(g_hProcess, (LPVOID)addr, data, sz, &written) && written == sz;
 }
 
-std::vector<uintptr_t> AoBScan(uintptr_t start, uintptr_t end, const char* pattern) {
-    return {};
-}
+std::vector<uintptr_t> AoBScan(uintptr_t, uintptr_t, const char*) { return {}; }
 
 void AimbotLoop()
 {
@@ -226,9 +222,7 @@ void AimbotLoop()
 
     while (g_running) {
         if (g_active && g_hProcess) {
-            if (g_entities.empty()) {
-                g_entities = AoBScan(0x10000ULL, 0x7FFFFFEFFFFULL, AIMBOT_AOB);
-            }
+            if (g_entities.empty()) g_entities = AoBScan(0x10000ULL, 0x7FFFFFEFFFFULL, "");
 
             for (auto base : g_entities) {
                 int team = 0;
@@ -238,13 +232,13 @@ void AimbotLoop()
                 if (ReadRaw(base + TARGET_OFFSET, &target, 4)) {
                     std::this_thread::sleep_for(std::chrono::milliseconds((int)(r1(g_rng)*1000)));
 
-                    float current = 0.0f;
-                    if (!g_lastAimBytes.empty()) memcpy(&current, g_lastAimBytes.data(), 4);
+                    float cur = 0.0f;
+                    if (!g_lastAimBytes.empty()) memcpy(&cur, g_lastAimBytes.data(), 4);
 
-                    float diff = fabs(target - current);
-                    float factor = (diff > 18.0f) ? 0.91f : (diff > 8.0f) ? 0.82f : SMOOTH_BASE - r2(g_rng);
+                    float diff = fabs(target - cur);
+                    float factor = (diff > 18) ? 0.91f : (diff > 8) ? 0.82f : SMOOTH_BASE - r2(g_rng);
 
-                    float newVal = current + (target - current) * factor;
+                    float newVal = cur + (target - cur) * factor;
                     WriteRaw(base + WRITE_OFFSET, &newVal, 4);
                     g_lastAimBytes.assign((BYTE*)&newVal, (BYTE*)&newVal + 4);
                 }
