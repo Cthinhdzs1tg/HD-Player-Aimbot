@@ -1,23 +1,10 @@
-// ================================================
-// main.cpp - FINAL FIXED VERSION
-// ================================================
-
-// Bảo vệ macro trước mọi include
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#define STRICT
-#define NO_MIN_MAX
-#define NOGDI
-#define NOIME
-#define NOSERVICE
-#define NOMCX
-#define NORPC
-#define NOPROXYSTUB
 
 #include <windows.h>
 #include <psapi.h>
 #include <tlhelp32.h>
-#include <shellapi.h>      // IsUserAnAdmin
+#include <shellapi.h>
 #include <string>
 #include <vector>
 #include <thread>
@@ -29,6 +16,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "kernel32.lib")
 #pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
 
 const DWORD PROCESS_ALL_ACCESS = 0x1F0FFF;
 const wchar_t* PROCESS_NAME = L"HD-Player.exe";
@@ -41,7 +29,6 @@ const int LOCAL_TEAM = 1;
 const float FOV_LIMIT = 92.0f;
 const float SMOOTH_BASE = 0.74f;
 
-// Globals
 std::atomic<bool> g_active{ false };
 std::atomic<bool> g_running{ true };
 char g_current_hotkey = 'R';
@@ -54,7 +41,6 @@ HWND g_hwnd = nullptr;
 
 std::mt19937 g_rng(std::random_device{}());
 
-// Forward declarations
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 bool OpenProcessByName();
@@ -64,7 +50,7 @@ std::vector<uintptr_t> AoBScan(uintptr_t start, uintptr_t end, const char* patte
 void AimbotLoop();
 void ToggleAimbot();
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 {
     if (!IsUserAnAdmin()) {
         ShellExecuteA(nullptr, "runas", GetCommandLineA(), nullptr, nullptr, SW_SHOWNORMAL);
@@ -83,10 +69,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     RegisterClassA(&wc);
 
-    g_hwnd = CreateWindowA("AimbotWindowClass", "Aimbot",
-        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-        CW_USEDEFAULT, CW_USEDEFAULT, 560, 380,
-        nullptr, nullptr, hInstance, nullptr);
+    g_hwnd = CreateWindowA("AimbotWindowClass", "Aimbot", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+                           CW_USEDEFAULT, CW_USEDEFAULT, 560, 380, nullptr, nullptr, hInstance, nullptr);
 
     if (!g_hwnd) return 0;
 
@@ -115,7 +99,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     return (int)msg.wParam;
 }
 
-// WndProc (UI đơn giản)
+// ==================== UI ====================
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     static HFONT hTitle = CreateFontA(26,0,0,0,FW_BOLD,0,0,0,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,"Segoe UI");
@@ -140,7 +124,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         SetTextColor(hdc, RGB(187,187,187));
         char buf[64];
-        sprintf_s(buf, "Hotkey: %c", toupper(g_current_hotkey));
+        sprintf_s(buf, "Hotkey: %c (Press to toggle)", toupper(g_current_hotkey));
         TextOutA(hdc, 50, 220, buf, (int)strlen(buf));
 
         SetTextColor(hdc, RGB(85,85,85));
@@ -180,7 +164,7 @@ void ToggleAimbot() {
     InvalidateRect(g_hwnd, nullptr, TRUE);
 }
 
-// Memory functions
+// ==================== Memory ====================
 bool OpenProcessByName()
 {
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
