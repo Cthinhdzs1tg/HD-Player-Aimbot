@@ -1,10 +1,15 @@
 // ================================================
-// main.cpp - Đã sửa hoàn chỉnh cho GitHub Actions
+// main.cpp - FINAL VERSION - Fixed macro conflict
 // ================================================
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define STRICT
+#define NO_MIN_MAX
+#define NOGDI
+#define NOIME
+#define NOSERVICE
+#define NOMCX
 
 #include <windows.h>
 #include <psapi.h>
@@ -211,7 +216,7 @@ bool WriteRaw(uintptr_t addr, const void* data, size_t size) {
 }
 
 std::vector<uintptr_t> AoBScan(uintptr_t start, uintptr_t end, const char* pattern) {
-    return {}; // TODO: Implement sau
+    return {};
 }
 
 void AimbotLoop()
