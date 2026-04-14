@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <psapi.h>
 #include <tlhelp32.h>
+#include <shellapi.h>     // Cho IsUserAnAdmin
 #include <string>
 #include <vector>
 #include <thread>
@@ -10,12 +11,15 @@
 #include <sstream>
 #include <iomanip>
 
-#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "kernel32.lib")
-#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "user32.lib")
+
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 
 const DWORD PROCESS_ALL_ACCESS = 0x1F0FFF;
-const char* PROCESS_NAME = "HD-Player.exe";
+const wchar_t* PROCESS_NAME = L"HD-Player.exe";
 
 const char* AIMBOT_AOB = "FF FF FF FF FF FF FF FF FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 FF FF FF FF ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 80 BF";
 
@@ -48,20 +52,19 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 bool OpenProcessByName();
 bool ReadRaw(uintptr_t addr, void* buffer, size_t size);
 bool WriteRaw(uintptr_t addr, const void* data, size_t size);
-std::vector<uintptr_t> AoBScan(uintptr_t start, uintptr_t end, const char* pattern); // TODO: implement
+std::vector<uintptr_t> AoBScan(uintptr_t start, uintptr_t end, const char* pattern);
 void AimbotLoop();
-void UpdateStatus();
 void ToggleAimbot();
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    // Request admin rights if not already
+    // Request admin rights
     if (!IsUserAnAdmin()) {
         ShellExecuteA(nullptr, "runas", GetCommandLineA(), nullptr, nullptr, SW_SHOWNORMAL);
         return 0;
     }
 
-    // Hide console if exists
+    // Hide console
     HWND console = GetConsoleWindow();
     if (console) ShowWindow(console, SW_HIDE);
 
@@ -95,8 +98,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         if (g_hProcess) {
-            // Update UI from main thread if needed (use PostMessage or similar)
-            PostMessage(g_hwnd, WM_USER + 1, 0, 0); // Custom message for "Connected"
+            PostMessage(g_hwnd, WM_USER + 1, 0, 0);
         }
     });
     attachThread.detach();
@@ -129,15 +131,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-
         RECT rect;
         GetClientRect(hwnd, &rect);
 
-        // Background
         FillRect(hdc, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
         SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(0, 255, 157)); // #00ff9d
+        SetTextColor(hdc, RGB(0, 255, 157));
 
         // Title
         SelectObject(hdc, hTitleFont);
@@ -152,7 +152,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         // Hotkey info
         SetTextColor(hdc, RGB(187, 187, 187));
         char hotkeyText[64];
-        sprintf_s(hotkeyText, "Hotkey: %c (click to change)", toupper(g_current_hotkey));
+        sprintf_s(hotkeyText, "Hotkey: %c (Press to toggle)", toupper(g_current_hotkey));
         TextOutA(hdc, 50, 220, hotkeyText, (int)strlen(hotkeyText));
 
         // Info
@@ -171,7 +171,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     }
 
-    case WM_USER + 1: // Connected message
+    case WM_USER + 1:
         InvalidateRect(hwnd, nullptr, TRUE);
         break;
 
@@ -200,7 +200,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 void ToggleAimbot()
 {
     g_active = !g_active;
-    InvalidateRect(g_hwnd, nullptr, TRUE); // Redraw
+    InvalidateRect(g_hwnd, nullptr, TRUE);
 }
 
 bool OpenProcessByName()
@@ -208,10 +208,10 @@ bool OpenProcessByName()
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snapshot == INVALID_HANDLE_VALUE) return false;
 
-    PROCESSENTRY32 pe = { sizeof(PROCESSENTRY32) };
-    if (Process32First(snapshot, &pe)) {
+    PROCESSENTRY32W pe = { sizeof(PROCESSENTRY32W) };   // Dùng W version để hỗ trợ Unicode
+    if (Process32FirstW(snapshot, &pe)) {
         do {
-            if (_stricmp(pe.szExeFile, PROCESS_NAME) == 0) {
+            if (_wcsicmp(pe.szExeFile, PROCESS_NAME) == 0) {
                 g_hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
                 if (g_hProcess) {
                     g_procId = pe.th32ProcessID;
@@ -219,7 +219,7 @@ bool OpenProcessByName()
                     return true;
                 }
             }
-        } while (Process32Next(snapshot, &pe));
+        } while (Process32NextW(snapshot, &pe));
     }
     CloseHandle(snapshot);
     return false;
@@ -227,20 +227,19 @@ bool OpenProcessByName()
 
 bool ReadRaw(uintptr_t addr, void* buffer, size_t size)
 {
-    SIZE_T bytesRead;
+    SIZE_T bytesRead = 0;
     return ReadProcessMemory(g_hProcess, (LPCVOID)addr, buffer, size, &bytesRead) && bytesRead == size;
 }
 
 bool WriteRaw(uintptr_t addr, const void* data, size_t size)
 {
-    SIZE_T bytesWritten;
+    SIZE_T bytesWritten = 0;
     return WriteProcessMemory(g_hProcess, (LPVOID)addr, data, size, &bytesWritten) && bytesWritten == size;
 }
 
-// TODO: Implement proper AoB scan (pattern with ?? as wildcard)
 std::vector<uintptr_t> AoBScan(uintptr_t start, uintptr_t end, const char* pattern)
 {
-    // Placeholder - returns empty like Python version
+    // TODO: Implement full AoB scanner later
     return {};
 }
 
@@ -251,40 +250,34 @@ void AimbotLoop()
 
     while (g_running) {
         if (g_active && g_hProcess) {
-            auto now = std::chrono::steady_clock::now(); // Simple timing
-
-            if (g_entities.empty()) { // Scan periodically
+            if (g_entities.empty()) {
                 g_entities = AoBScan(0x10000, 0x7FFFFFEFFFF, AIMBOT_AOB);
             }
 
             for (uintptr_t base : g_entities) {
-                try {
-                    int team = 0;
-                    if (ReadRaw(base + TEAM_OFFSET, &team, 4) && team == LOCAL_TEAM) continue;
+                int team = 0;
+                if (ReadRaw(base + TEAM_OFFSET, &team, 4) && team == LOCAL_TEAM) continue;
 
-                    float targetVal = 0.0f;
-                    if (ReadRaw(base + TARGET_OFFSET, &targetVal, 4)) {
-                        std::this_thread::sleep_for(std::chrono::milliseconds((int)(rand018_072(g_rng) * 1000)));
+                float targetVal = 0.0f;
+                if (ReadRaw(base + TARGET_OFFSET, &targetVal, 4)) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds((int)(rand018_072(g_rng) * 1000)));
 
-                        // Smart smooth write
-                        float current = 0.0f;
-                        if (!g_lastAimBytes.empty()) {
-                            memcpy(&current, g_lastAimBytes.data(), 4);
-                        }
-
-                        float diff = fabs(targetVal - current);
-                        float factor = SMOOTH_BASE;
-                        if (diff > 18) factor = 0.91f;
-                        else if (diff > 8) factor = 0.82f;
-                        else factor = SMOOTH_BASE - randSmooth(g_rng);
-
-                        float newVal = current + (targetVal - current) * factor;
-                        WriteRaw(base + WRITE_OFFSET, &newVal, 4);
-
-                        g_lastAimBytes.assign((BYTE*)&newVal, (BYTE*)&newVal + 4);
+                    float current = 0.0f;
+                    if (!g_lastAimBytes.empty()) {
+                        memcpy(&current, g_lastAimBytes.data(), 4);
                     }
+
+                    float diff = fabs(targetVal - current);
+                    float factor = SMOOTH_BASE;
+                    if (diff > 18.0f) factor = 0.91f;
+                    else if (diff > 8.0f) factor = 0.82f;
+                    else factor = SMOOTH_BASE - randSmooth(g_rng);
+
+                    float newVal = current + (targetVal - current) * factor;
+                    WriteRaw(base + WRITE_OFFSET, &newVal, 4);
+
+                    g_lastAimBytes.assign((BYTE*)&newVal, (BYTE*)&newVal + 4);
                 }
-                catch (...) {}
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(42));
