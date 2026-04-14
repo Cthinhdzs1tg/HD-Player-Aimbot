@@ -1,0 +1,65 @@
+name: Build Aimbot EXE (Windows x64)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:                # Cho phép bấm "Run workflow" thủ công
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v3
+
+      - name: Setup Visual Studio Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Create project file Aimbot.vcxproj (nếu chưa có)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "Aimbot.vcxproj")) {
+            @"
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
+"@ | Out-File -FilePath "Aimbot.vcxproj" -Encoding utf8
+          }
+
+      - name: Build Release x64
+        run: msbuild Aimbot.vcxproj /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
+
+      - name: Upload Aimbot.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aimbot-EXE
+          path: x64/Release/Aimbot.exe
+          if-no-files-found: error
+          retention-days: 30
