@@ -1,0 +1,19 @@
+# Build artifacts
+x64/
+Debug/
+Release/
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# Visual Studio files
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+.vs/
+
+# Temporary files
+*.tmp
+*.log
