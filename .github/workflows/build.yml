@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:                # Cho phép bấm "Run workflow" thủ công
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,11 +23,11 @@ jobs:
         with:
           arch: x64
 
-      - name: Create project file Aimbot.vcxproj (nếu chưa có)
+      - name: Create Aimbot.vcxproj if not exists
         shell: pwsh
         run: |
           if (-not (Test-Path "Aimbot.vcxproj")) {
-            @"
+            $vcxproj = @"
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
@@ -50,7 +50,8 @@ jobs:
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
-"@ | Out-File -FilePath "Aimbot.vcxproj" -Encoding utf8
+"@
+            $vcxproj | Out-File -FilePath "Aimbot.vcxproj" -Encoding utf8
           }
 
       - name: Build Release x64
