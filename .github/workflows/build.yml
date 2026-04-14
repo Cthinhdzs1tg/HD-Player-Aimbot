@@ -23,34 +23,32 @@ jobs:
         with:
           arch: x64
 
-      - name: Create Aimbot.vcxproj if not exists
+      - name: Create Aimbot.vcxproj
         shell: pwsh
         run: |
-          $vcxprojContent = @'
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Release|x64">
-      <Configuration>Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-  </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-    <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-  </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ItemGroup>
-    <ClCompile Include="main.cpp" />
-  </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-</Project>
-'@
-          $vcxprojContent | Out-File -FilePath "Aimbot.vcxproj" -Encoding utf8
+          # Create vcxproj file safely line by line
+          "<?xml version=`"1.0`" encoding=`"utf-8`"?>" | Out-File -FilePath "Aimbot.vcxproj" -Encoding utf8
+          "<Project DefaultTargets=`"Build`" xmlns=`"http://schemas.microsoft.com/developer/msbuild/2003`">" | Add-Content "Aimbot.vcxproj"
+          "  <ItemGroup Label=`"ProjectConfigurations`">" | Add-Content "Aimbot.vcxproj"
+          "    <ProjectConfiguration Include=`"Release|x64`">" | Add-Content "Aimbot.vcxproj"
+          "      <Configuration>Release</Configuration>" | Add-Content "Aimbot.vcxproj"
+          "      <Platform>x64</Platform>" | Add-Content "Aimbot.vcxproj"
+          "    </ProjectConfiguration>" | Add-Content "Aimbot.vcxproj"
+          "  </ItemGroup>" | Add-Content "Aimbot.vcxproj"
+          "  <PropertyGroup Condition=`"'$(Configuration)|$(Platform)'=='Release|x64'`" Label=`"Configuration`">" | Add-Content "Aimbot.vcxproj"
+          "    <ConfigurationType>Application</ConfigurationType>" | Add-Content "Aimbot.vcxproj"
+          "    <UseDebugLibraries>false</UseDebugLibraries>" | Add-Content "Aimbot.vcxproj"
+          "    <PlatformToolset>v143</PlatformToolset>" | Add-Content "Aimbot.vcxproj"
+          "    <WholeProgramOptimization>true</WholeProgramOptimization>" | Add-Content "Aimbot.vcxproj"
+          "    <CharacterSet>Unicode</CharacterSet>" | Add-Content "Aimbot.vcxproj"
+          "    <RuntimeLibrary>MultiThreaded</RuntimeLibrary>" | Add-Content "Aimbot.vcxproj"
+          "  </PropertyGroup>" | Add-Content "Aimbot.vcxproj"
+          "  <Import Project=`"$(VCTargetsPath)\Microsoft.Cpp.props`" />" | Add-Content "Aimbot.vcxproj"
+          "  <ItemGroup>" | Add-Content "Aimbot.vcxproj"
+          "    <ClCompile Include=`"main.cpp`" />" | Add-Content "Aimbot.vcxproj"
+          "  </ItemGroup>" | Add-Content "Aimbot.vcxproj"
+          "  <Import Project=`"$(VCTargetsPath)\Microsoft.Cpp.targets`" />" | Add-Content "Aimbot.vcxproj"
+          "</Project>" | Add-Content "Aimbot.vcxproj"
 
       - name: Build Release x64
         run: msbuild Aimbot.vcxproj /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
