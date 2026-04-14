@@ -23,7 +23,7 @@ jobs:
         with:
           arch: x64
 
-      - name: Create Aimbot.vcxproj (with fixes)
+      - name: Create Aimbot.vcxproj (Final Fixed)
         shell: cmd
         run: |
           echo ^<?xml version="1.0" encoding="utf-8"?^> > Aimbot.vcxproj
@@ -66,7 +66,7 @@ jobs:
           echo       ^<SubSystem^>Windows^</SubSystem^> >> Aimbot.vcxproj
           echo       ^<EnableCOMDATFolding^>true^</EnableCOMDATFolding^> >> Aimbot.vcxproj
           echo       ^<OptimizeReferences^>true^</OptimizeReferences^> >> Aimbot.vcxproj
-          echo       ^<AdditionalDependencies^>shell32.lib;kernel32.lib;user32.lib;%(AdditionalDependencies)^</AdditionalDependencies^> >> Aimbot.vcxproj
+          echo       ^<AdditionalDependencies^>shell32.lib;kernel32.lib;user32.lib;gdi32.lib;%(AdditionalDependencies)^</AdditionalDependencies^> >> Aimbot.vcxproj
           echo     ^</Link^> >> Aimbot.vcxproj
           echo   ^</ItemDefinitionGroup^> >> Aimbot.vcxproj
 
@@ -83,7 +83,7 @@ jobs:
       - name: Upload Aimbot.exe
         uses: actions/upload-artifact@v4
         with:
-          name: Aimbot-EXE
+          name: HD-Player-Aimbot-EXE
           path: x64/Release/Aimbot.exe
           if-no-files-found: error
           retention-days: 30
